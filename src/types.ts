@@ -15,5 +15,5 @@ export type MockOptions = {
 export interface MockResponse {
   data?: any;
   status?: number;
-  headers?: Headers;
+  headers?: Record<string, string>;
 }
