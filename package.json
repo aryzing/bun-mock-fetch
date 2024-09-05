@@ -7,6 +7,10 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aryzing/bun-mock-fetch.git"
+  },
   "scripts": {
     "build": "tsc",
     "check-format": "prettier --check .",
