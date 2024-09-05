@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    // Type Checking
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strict": true,
+
+    // Modules
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "src",
+
+    // Emit
+    "declaration": true,
+    "outDir": "dist",
+    "sourceMap": true,
+
+    // Interop Constraints
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    // Language and Environment
+    "lib": ["ESNext"],
+    "moduleDetection": "force",
+    "target": "ESNext",
+
+    // Completeness
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

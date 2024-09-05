@@ -1,0 +1,31 @@
+{
+  "name": "@aryzing/bun-mock-fetch",
+  "version": "0.1.0",
+  "author": "Eduard Bardají Puig <@aryzing>",
+  "type": "module",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "check-format": "prettier --check .",
+    "format": "prettier --write .",
+    "check-types": "tsc --noEmit",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm --quiet",
+    "ci": "bun run build && bun run check-format && bun run check-exports"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.15.4",
+    "@types/bun": "latest",
+    "prettier": "^3.3.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "glob": "^11.0.0",
+    "minimatch": "^10.0.1"
+  }
+}
