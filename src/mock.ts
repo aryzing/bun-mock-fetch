@@ -1,7 +1,11 @@
 import { minimatch } from "minimatch";
 import { defaultMockOptions } from "./constants.js";
-import { type MockOptions } from "./types.js";
 import { makeSimplifiedResponse, type SimplifiedResponse } from "./utils.js";
+import type {
+  DetailedMatcher,
+  MockResponseOptions,
+  RequestMatcher,
+} from "./types.js";
 
 let originalFetch: typeof fetch;
 
@@ -11,46 +15,68 @@ export function setIsVerbose(value: boolean) {
 }
 
 type MockedRequest =
-  | { type: "regexp"; regexp: RegExp; options: MockOptions }
-  | { type: "minimatch"; minimatch: string; options: MockOptions };
-// | {
-//     type: "function";
-//     fn: (
-//       input: Parameters<typeof fetch>[0],
-//       init: Parameters<typeof fetch>[1],
-//     ) => boolean;
-//     options: MockOptions;
-//   };
+  | {
+      type: "regexp";
+      regexp: RegExp;
+      mockResponseOptions: MockResponseOptions;
+    }
+  | {
+      type: "stringLiteralOrMinimatch";
+      value: string;
+      mockResponseOptions: MockResponseOptions;
+    }
+  | {
+      type: "function";
+      fn: (
+        input: Parameters<typeof fetch>[0],
+        init: Parameters<typeof fetch>[1],
+      ) => boolean;
+      mockResponseOptions: MockResponseOptions;
+    }
+  | {
+      type: "detailed";
+      matcher: DetailedMatcher;
+      mockResponseOptions: MockResponseOptions;
+    };
 
 /**
  * The cache for registered mocked requests.
  */
 const mockedRequests: Array<MockedRequest> = [];
 
-type Minimatch = string;
-export type URLMatch = Minimatch | RegExp;
-// | ((
-//     input: Parameters<typeof fetch>[0],
-//     init: Parameters<typeof fetch>[1],
-//   ) => boolean);
-
 /**
  * Mock the fetch method. The most recently defined matching mock will be used.
  */
 export const mockFetch = (
-  urlMatch: URLMatch,
-  options: MockOptions = defaultMockOptions,
+  requestMatcher: RequestMatcher,
+  mockResponseOptions: MockResponseOptions = defaultMockOptions,
 ): void => {
-  if (urlMatch instanceof RegExp) {
-    mockedRequests.unshift({ type: "regexp", regexp: urlMatch, options });
-  } else if (typeof urlMatch === "string") {
-    mockedRequests.unshift({ type: "minimatch", minimatch: urlMatch, options });
-  }
-  // else if (typeof urlMatch === "function") {
-  //   mockedRequests.unshift({ type: "function", fn: urlMatch, options });
-  // }
-  else {
-    throw new Error("Invalid URL match type");
+  if (requestMatcher instanceof RegExp) {
+    mockedRequests.unshift({
+      type: "regexp",
+      regexp: requestMatcher,
+      mockResponseOptions,
+    });
+  } else if (typeof requestMatcher === "string") {
+    mockedRequests.unshift({
+      type: "stringLiteralOrMinimatch",
+      value: requestMatcher,
+      mockResponseOptions,
+    });
+  } else if (typeof requestMatcher === "function") {
+    mockedRequests.unshift({
+      type: "function",
+      fn: requestMatcher,
+      mockResponseOptions,
+    });
+  } else if (typeof requestMatcher === "object") {
+    mockedRequests.unshift({
+      type: "detailed",
+      matcher: requestMatcher,
+      mockResponseOptions,
+    });
+  } else {
+    throw new Error("Invalid matcher.");
   }
 
   if (!originalFetch) {
@@ -86,70 +112,69 @@ export function setIsUsingBuiltInFetchFallback(value: boolean) {
 }
 
 /**
- * A mocked fetch method.
+ * The mocked fetch method.
  */
 const mockedFetch = async (
   input: Parameters<typeof fetch>[0],
   init?: RequestInit,
 ): Promise<SimplifiedResponse> => {
-  const path = input instanceof Request ? input.url : input.toString();
-  if (isVerbose) console.debug("[BMF]: Mocked fetch called with path:", path);
+  const requestUrl = input instanceof Request ? input.url : input.toString();
+  if (isVerbose)
+    console.debug("[BMF]: Mocked fetch called with path:", requestUrl);
 
   for (const mockedRequest of mockedRequests) {
     switch (mockedRequest.type) {
       case "regexp": {
-        // Match path
-        if (!mockedRequest.regexp.test(path)) continue;
+        if (!mockedRequest.regexp.test(requestUrl)) continue;
 
-        // Match method
-        const optionsMethod = mockedRequest.options.method;
-        const requestMethod = (init && init.method) || "GET";
-        if (
-          optionsMethod &&
-          optionsMethod.toLowerCase() !== requestMethod.toLowerCase()
-        )
-          continue;
-
-        // Match headers
-        const optionsHeaders = mockedRequest.options.headers;
-        if (optionsHeaders) {
-          const inputHeaders =
-            input instanceof Request ? input.headers : new Headers();
-          const initHeaders = new Headers(init?.headers);
-          const requestHeaders = new Headers([...inputHeaders, ...initHeaders]);
-          const headersMatch = [...Object.entries(optionsHeaders)].every(
-            ([optionHeaderName, optionHeaderValue]) => {
-              const requestHeaderValue = requestHeaders.get(optionHeaderName);
-              return requestHeaderValue === optionHeaderValue;
-            },
-          );
-          if (!headersMatch) continue;
-        }
-
-        return makeSimplifiedResponse(path, mockedRequest.options);
+        return makeSimplifiedResponse(
+          requestUrl,
+          mockedRequest.mockResponseOptions,
+        );
       }
 
-      case "minimatch": {
-        // Match path
-        if (!minimatch(path, mockedRequest.minimatch)) continue;
-
-        // Match method
-        const optionsMethod = mockedRequest.options.method;
-        const requestMethod = (init && init.method) || "GET";
+      case "stringLiteralOrMinimatch": {
         if (
-          optionsMethod &&
-          optionsMethod.toLowerCase() !== requestMethod.toLowerCase()
+          requestUrl !== mockedRequest.value &&
+          !minimatch(requestUrl, mockedRequest.value)
         )
           continue;
 
-        // Match headers
-        const optionsHeaders = mockedRequest.options.headers;
-        if (optionsHeaders) {
+        return makeSimplifiedResponse(
+          requestUrl,
+          mockedRequest.mockResponseOptions,
+        );
+      }
+      case "function": {
+        if (!mockedRequest.fn(input, init)) continue;
+
+        return makeSimplifiedResponse(
+          requestUrl,
+          mockedRequest.mockResponseOptions,
+        );
+      }
+      case "detailed": {
+        const { matcher, mockResponseOptions } = mockedRequest;
+        const { url, method, headers } = matcher;
+
+        if (typeof url === "string") {
+          if (url !== requestUrl && !minimatch(requestUrl, url)) continue;
+        } else if (url instanceof RegExp) {
+          if (!url.test(requestUrl)) continue;
+        }
+
+        if (
+          method &&
+          method.toLowerCase() !== (init?.method || "GET").toLowerCase()
+        )
+          continue;
+
+        if (headers) {
           const inputHeaders =
             input instanceof Request ? input.headers : new Headers();
           const initHeaders = new Headers(init?.headers);
           const requestHeaders = new Headers([...inputHeaders, ...initHeaders]);
-          const headersMatch = [...Object.entries(optionsHeaders)].every(
+          const headersMatch = [...Object.entries(headers)].every(
             ([optionHeaderName, optionHeaderValue]) => {
               const requestHeaderValue = requestHeaders.get(optionHeaderName);
               return requestHeaderValue === optionHeaderValue;
@@ -158,20 +183,25 @@ const mockedFetch = async (
           if (!headersMatch) continue;
         }
 
-        return makeSimplifiedResponse(path, mockedRequest.options);
+        return makeSimplifiedResponse(requestUrl, mockResponseOptions);
       }
     }
   }
 
-  if (isVerbose) console.debug("[BMF]: No matching mock found for path:", path);
+  if (isVerbose)
+    console.debug("[BMF]: No matching mock found for request:", requestUrl);
 
   if (isUsingBuiltInFetchFallback) {
-    if (isVerbose) console.debug("[BMF]: Using built-in fetch for path:", path);
+    if (isVerbose)
+      console.debug("[BMF]: Using built-in fetch for request:", requestUrl);
     return originalFetch(input, init);
   }
 
-  if (isVerbose) console.debug("[BMF]: Rejecting with 404 for path:", path);
-  return Promise.reject(
-    makeSimplifiedResponse(path, { response: { status: 404 } }),
+  if (isVerbose) console.debug("[BMF]: Responding with 404:", requestUrl);
+  return Promise.resolve(
+    makeSimplifiedResponse(requestUrl, {
+      status: 404,
+      data: `{"bun-mock-fetch":"No matching mocks."}`,
+    }),
   );
 };

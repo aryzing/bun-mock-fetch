@@ -1,19 +1,21 @@
-/**
- * The options for a mocked request. Partial implementation of RequestInit with
- * the addition of "data" property which value will be returned from the mock.
- */
-export type MockOptions = {
+export type Glob = string;
+export type DetailedMatcher = {
+  url?: string | Glob | RegExp;
+  method?: string;
   headers?: Record<string, string>;
-  method?: Request["method"];
-  response?: MockResponse;
 };
+export type RequestMatcher =
+  | string
+  | Glob
+  | RegExp
+  | ((
+      input: Parameters<typeof fetch>[0],
+      init: Parameters<typeof fetch>[1],
+    ) => boolean)
+  | DetailedMatcher;
 
-/**
- * The response for a mocked request. Partial implementation of Response with
- * the addition of "data" property which value will be returned from the mock.
- */
-export interface MockResponse {
-  data?: any;
+export type MockResponseOptions = {
+  data?: unknown;
   status?: number;
   headers?: Record<string, string>;
-}
+};

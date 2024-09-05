@@ -6,10 +6,16 @@ Mock fetch requests in Bun. Particularly useful when running tests.
 bun add @aryzing/bun-mock-fetch
 ```
 
-Example usage:
+Basic usage:
 
 ```typescript
-// Returns 200 OK by default
+mockFetch(requestMatcher, optionalMockResponseOptions);
+```
+
+Request matcher examples:
+
+```typescript
+// Simple string matching
 mockFetch("https://example.com");
 
 // Using minimatch
@@ -18,15 +24,31 @@ mockFetch("https://example.com/foo/**");
 // Using regex
 mockFetch(/.*example.*/);
 
-mockFetch("https://example.com/foo/**", {
-  // Must have these headers.
-  headers: { "x-example-header": "example-value" },
-  // Must use this method.
-  method: "GET",
-  response: {
-    data: JSON.stringify({ foo: "bar" }),
-    headers: { "Content-Type": "application/json" },
-    status: 200,
+// Using a function
+mockFetch((input, init) => input.url === "https://example.com");
+
+// Using a detailed matcher object. All properties are optional.
+mockFetch({
+  // Must match this string, glob, or regex
+  url: "https://example.com",
+  // Must match this method (case-insensitive).
+  method: "POST",
+  // Must include these headers (case-insensitive) and match their values.
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+```
+
+Response options example:
+
+```typescript
+mockFetch(/.*example.*/, {
+  // The expected resolved value of Response.json() or Response.text().
+  data: "Hello, world!",
+  status: 200,
+  headers: {
+    "Content-Type": "text/plain",
   },
 });
 ```
@@ -57,7 +79,7 @@ test("second test", async () => {
 });
 ```
 
-The `mockFetch` method may be called several times to define multiple mocks. Requests will at be matched at most against one mock, with later mocks take precendece over earlier mocks.
+Each call to `mockFetch` defines a new mock. At most one mock is used,, with each mock taking precendece over previously defined mocks.
 
 By default, requests that aren't matched against any mock definitions are forwarded to the native built-in fetch. This behavior can be modified using `setIsUsingBuiltInFetchFallback()`.
 
