@@ -1,6 +1,6 @@
 # `@aryzing/bun-mock-fetch`
 
-Mock fetch requests in Bun. Particularly useful when running tests.
+Mock fetch requests in Bun. Great for tests.
 
 ```shell
 bun add @aryzing/bun-mock-fetch
@@ -53,7 +53,7 @@ mockFetch(/.*example.*/, {
 });
 ```
 
-Example in tests,
+Test example:
 
 ```typescript
 afterEach(() => {
@@ -79,9 +79,9 @@ test("second test", async () => {
 });
 ```
 
-Each call to `mockFetch` defines a new mock. At most one mock is used,, with each mock taking precendece over previously defined mocks.
+Each call to `mockFetch` defines a new mock. At most one mock is used, with each mock taking precendece over previously defined mocks.
 
-By default, requests that aren't matched against any mock definitions are forwarded to the native built-in fetch. This behavior can be modified using `setIsUsingBuiltInFetchFallback()`.
+By default, requests that aren't matched against any mock definitions are forwarded to the native built-in fetch. This behavior can be modified with `setIsUsingBuiltInFetchFallback()`.
 
 To clear the mocks and restore original built-in fetch,
 
