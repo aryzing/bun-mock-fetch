@@ -22,10 +22,20 @@ mockFetch("https://example.com", new Response());
 mockFetch("https://example.com/foo/**", new Response());
 
 // Using regex.
-mockFetch(/.*example.*/, new Response());
+mockFetch(/example/, new Response());
 
 // Using a matcher function.
-mockFetch((input, init) => input.url === "https://example.com", new Response());
+mockFetch((input, init) => {
+  // Check input.
+  if (typeof input === "string") return input.includes("example");
+  if (input instanceof URL) return input.host.includes("example");
+  if (input instanceof Request) return input.url.includes("example");
+
+  // Check init.
+  if (init) {
+    // ...
+  }
+}, new Response());
 
 // Using a detailed matcher object. All properties are optional.
 mockFetch({
