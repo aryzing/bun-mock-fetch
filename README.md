@@ -9,27 +9,27 @@ bun add @aryzing/bun-mock-fetch
 Basic usage:
 
 ```typescript
-mockFetch(requestMatcher, optionalMockResponseOptions);
+mockFetch(requestMatcher, response);
 ```
 
 Request matcher examples:
 
 ```typescript
-// Simple string matching
-mockFetch("https://example.com");
+// Simple string matching.
+mockFetch("https://example.com", new Response());
 
-// Using minimatch
-mockFetch("https://example.com/foo/**");
+// Using minimatch.
+mockFetch("https://example.com/foo/**", new Response());
 
-// Using regex
-mockFetch(/.*example.*/);
+// Using regex.
+mockFetch(/.*example.*/, new Response());
 
-// Using a function
-mockFetch((input, init) => input.url === "https://example.com");
+// Using a matcher function.
+mockFetch((input, init) => input.url === "https://example.com", new Response());
 
 // Using a detailed matcher object. All properties are optional.
 mockFetch({
-  // Must match this string, glob, or regex
+  // Must match this string, glob, or regex.
   url: "https://example.com",
   // Must match this method (case-insensitive).
   method: "POST",
@@ -40,16 +40,35 @@ mockFetch({
 });
 ```
 
-Response options example:
+Response examples:
 
 ```typescript
-mockFetch(/.*example.*/, {
-  // The expected resolved value of Response.json() or Response.text().
-  data: "Hello, world!",
-  status: 200,
-  headers: {
-    "Content-Type": "text/plain",
-  },
+// Text response.
+mockFetch(/example/, new Response("Hello, world!"));
+
+// JSON response.
+mockFetch(
+  /example/,
+  new Response('{"message": "Hello, world!"}', {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }),
+);
+
+// Response function.
+mockFetch(/example/, async ({ mockedRequest, input, init }) => {
+  console.log(mockedRequest); // The matched mock request config.
+  console.log(input); // The 1st arg. to `fetch`.
+  console.log(init); // The 2nd arg. to `fetch`.
+
+  // Delayed response example, useful for spinners and timeouts.
+  await delay(1000);
+
+  // Configure response based on request.
+  const name =
+    (input instanceof Request ? input : init)?.body?.toString() || "guest";
+  return new Response(`Hello ${name}!`);
 });
 ```
 
@@ -61,20 +80,12 @@ afterEach(() => {
 });
 
 test("first test", async () => {
-  mockFetch("https://api.example.com", {
-    response: {
-      data: "first",
-    },
-  });
+  mockFetch("https://api.example.com", new Response("first"));
   expect(await makeApiRequest()).toBe("first");
 });
 
 test("second test", async () => {
-  mockFetch("https://api.example.com", {
-    response: {
-      data: "second",
-    },
-  });
+  mockFetch("https://api.example.com", new Response("second"));
   expect(await makeApiRequest()).toBe("second");
 });
 ```
