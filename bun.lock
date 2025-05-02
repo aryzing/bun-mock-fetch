@@ -4,7 +4,7 @@
     "": {
       "name": "@aryzing/bun-mock-fetch",
       "dependencies": {
-        "glob": "^11.0.0",
+        "glob": "^11.0.2",
         "minimatch": "^10.0.1",
       },
       "devDependencies": {
