@@ -61,8 +61,9 @@ export const mockFetch = (
 
   if (!originalFetch) {
     originalFetch = globalThis.fetch.bind(globalThis);
-    globalThis.fetch = mockedFetch;
   }
+
+  globalThis.fetch = mockedFetch;
 };
 
 /**
