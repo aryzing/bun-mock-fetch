@@ -1,6 +1,6 @@
-# `@aryzing/bun-mock-fetch`
+# Bun Mock Fetch
 
-Mock fetch requests in Bun. Great for tests.
+Mock fetch requests in Bun. Great for tests and debugging.
 
 ```shell
 bun add @aryzing/bun-mock-fetch

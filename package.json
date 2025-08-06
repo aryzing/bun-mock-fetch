@@ -1,7 +1,8 @@
 {
   "name": "@aryzing/bun-mock-fetch",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "Eduard Bardají Puig <@aryzing>",
+  "description": "Mock fetch requests in Bun.",
   "type": "module",
   "main": "dist/index.js",
   "files": [
@@ -31,5 +32,12 @@
   "dependencies": {
     "glob": "^11.0.2",
     "minimatch": "^10.0.1"
-  }
+  },
+  "keywords": [
+    "bun",
+    "mock",
+    "fetch",
+    "mocking",
+    "testing"
+  ]
 }
