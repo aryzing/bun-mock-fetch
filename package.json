@@ -1,6 +1,6 @@
 {
   "name": "@aryzing/bun-mock-fetch",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "author": "Eduard Bardají Puig <@aryzing>",
   "description": "Mock fetch requests in Bun.",
   "type": "module",
@@ -35,9 +35,11 @@
   },
   "keywords": [
     "bun",
-    "mock",
     "fetch",
+    "mock",
     "mocking",
-    "testing"
+    "test",
+    "testing",
+    "tests"
   ]
 }
