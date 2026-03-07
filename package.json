@@ -1,6 +1,6 @@
 {
   "name": "@aryzing/bun-mock-fetch",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "Eduard Bardají Puig <@aryzing>",
   "description": "Mock fetch requests in Bun.",
   "type": "module",
@@ -10,7 +10,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/aryzing/bun-mock-fetch.git"
+    "url": "git+https://github.com/aryzing/bun-mock-fetch.git"
   },
   "scripts": {
     "build": "tsc",
