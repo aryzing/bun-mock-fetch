@@ -21,17 +21,17 @@
     "ci": "bun run check-format && bun test && bun run build && bun run check-exports"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.15.4",
+    "@arethetypeswrong/cli": "^0.18.2",
     "@types/bun": "latest",
-    "prettier": "^3.3.3"
+    "prettier": "^3.8.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "license": "MIT",
   "dependencies": {
-    "glob": "^11.0.2",
-    "minimatch": "^10.0.1"
+    "glob": "^13.0.6",
+    "minimatch": "^10.2.4"
   },
   "keywords": [
     "bun",
