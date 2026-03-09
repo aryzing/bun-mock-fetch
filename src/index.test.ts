@@ -1,7 +1,11 @@
-import { describe, expect, test } from "bun:test";
-import { mockFetch } from "./mock.js";
+import { afterEach, describe, expect, test } from "bun:test";
+import { clearFetchMocks, mockFetch } from "./mock.js";
 
 describe("matchers", () => {
+  afterEach(() => {
+    clearFetchMocks();
+  });
+
   test("string matcher", async () => {
     mockFetch("https://api.example.com", new Response("example response"));
     const resText = await (await fetch("https://api.example.com")).text();
@@ -59,6 +63,10 @@ describe("matchers", () => {
 });
 
 describe("responses", () => {
+  afterEach(() => {
+    clearFetchMocks();
+  });
+
   test("instance of response", async () => {
     mockFetch("https://api.example.com", new Response("example response"));
     const resText = await (await fetch("https://api.example.com")).text();
