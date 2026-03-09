@@ -14,16 +14,11 @@ export type RequestMatcher =
     ) => boolean)
   | DetailedMatcher;
 
-export type MockResponseOptions = {
-  data?: unknown;
-  status?: number;
-  headers?: Record<string, string>;
-};
-
 export type ResponseFn = (arg: {
   mockedRequest: MockedRequest;
   input: Parameters<typeof fetch>[0];
   init?: Parameters<typeof fetch>[1];
+  nativeFetch: typeof fetch;
 }) => Promise<Response> | Response;
 
 export type ResponseOrResponseFn = Response | ResponseFn;

@@ -12,11 +12,34 @@ class BunMockFetchError extends Error {
   }
 }
 
-let originalFetch: typeof fetch | null = null;
+let nativeFetch: typeof fetch | null = null;
 
-let isVerbose = false;
+let isLogging = false;
+export function setLogging(value: boolean) {
+  isLogging = value;
+}
+
+/**
+ * @deprecated Use `setLogging` instead.
+ */
 export function setIsVerbose(value: boolean) {
-  isVerbose = value;
+  console.warn(
+    "[@aryzing/bun-mock-fetch]: `setIsVerbose` is deprecated. Use `setLogging` instead.",
+  );
+  setLogging(value);
+}
+
+/**
+ * Creates a JSON `Response` with `Content-Type: application/json`.
+ */
+export function json(data: unknown, init?: ResponseInit): Response {
+  return new Response(JSON.stringify(data), {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
+  });
 }
 
 /**
@@ -59,8 +82,8 @@ export const mockFetch = (
     throw new BunMockFetchError("Invalid matcher.");
   }
 
-  if (!originalFetch) {
-    originalFetch = globalThis.fetch.bind(globalThis);
+  if (!nativeFetch) {
+    nativeFetch = globalThis.fetch.bind(globalThis);
   }
 
   globalThis.fetch = mockedFetch;
@@ -73,29 +96,56 @@ export const clearFetchMocks = () => {
   mockedRequests.length = 0;
 
   // Restore the original fetch method, if it was mocked.
-  if (originalFetch) {
-    globalThis.fetch = originalFetch;
+  if (nativeFetch) {
+    globalThis.fetch = nativeFetch;
+    nativeFetch = null;
   }
 };
 
-let isUsingBuiltInFetchFallback = true;
+let passthrough = true;
 /**
- * Enable or disable using the built-in fetch as fallback when a request doesn't
- * match any mock. Enabled by default.
+ * Enable or disable passing unmatched requests through to the native built-in
+ * fetch. Enabled by default.
+ */
+export function setPassthrough(value: boolean) {
+  passthrough = value;
+}
+
+/**
+ * @deprecated Use `setPassthrough` instead.
+ */
+export function setFetchPassthrough(value: boolean) {
+  console.warn(
+    "[@aryzing/bun-mock-fetch]: `setFetchPassthrough` is deprecated. Use `setPassthrough` instead.",
+  );
+  setPassthrough(value);
+}
+
+/**
+ * @deprecated Use `setPassthrough` instead.
  */
 export function setIsUsingBuiltInFetchFallback(value: boolean) {
-  isUsingBuiltInFetchFallback = value;
+  console.warn(
+    "[@aryzing/bun-mock-fetch]: `setIsUsingBuiltInFetchFallback` is deprecated. Use `setPassthrough` instead.",
+  );
+  setPassthrough(value);
 }
 
 async function makeResponse(args: {
   mockedRequest: MockedRequest;
   input: Parameters<typeof fetch>[0];
   init?: Parameters<typeof fetch>[1];
+  nativeFetch: typeof fetch;
 }): Promise<Response> {
-  const { mockedRequest, input, init } = args;
+  const { mockedRequest, input, init, nativeFetch } = args;
   if (mockedRequest.response instanceof Response) return mockedRequest.response;
 
-  return await mockedRequest.response({ mockedRequest, input, init });
+  return await mockedRequest.response({
+    mockedRequest,
+    input,
+    init,
+    nativeFetch,
+  });
 }
 
 /**
@@ -106,8 +156,11 @@ const mockedFetch = async (
   init?: Parameters<typeof fetch>[1],
 ): Promise<Response> => {
   const requestUrl = input instanceof Request ? input.url : input.toString();
-  if (isVerbose)
-    console.debug("[BMF]: Mocked fetch called with path:", requestUrl);
+  if (isLogging)
+    console.debug(
+      "[@aryzing/bun-mock-fetch]: Mocked fetch called with path:",
+      requestUrl,
+    );
 
   for (const mockedRequest of mockedRequests) {
     switch (mockedRequest.type) {
@@ -169,25 +222,32 @@ const mockedFetch = async (
       mockedRequest,
       input,
       init,
+      nativeFetch: nativeFetch ?? globalThis.fetch,
     });
   }
 
-  if (isVerbose)
-    console.debug("[BMF]: No matching mock found for request:", requestUrl);
+  if (isLogging)
+    console.debug(
+      "[@aryzing/bun-mock-fetch]: No matching mock found for request:",
+      requestUrl,
+    );
 
-  if (isUsingBuiltInFetchFallback) {
-    if (isVerbose)
-      console.debug("[BMF]: Using built-in fetch for request:", requestUrl);
+  if (passthrough) {
+    if (isLogging)
+      console.debug(
+        "[@aryzing/bun-mock-fetch]: Using built-in fetch for request:",
+        requestUrl,
+      );
 
-    if (!originalFetch)
-      throw new BunMockFetchError("Expected `originalFetch` to be defined.");
+    if (!nativeFetch)
+      throw new BunMockFetchError("Expected `nativeFetch` to be defined.");
 
-    return originalFetch(input, init);
+    return nativeFetch(input, init);
   }
 
-  if (isVerbose) console.debug("[BMF]: Responding with 404:", requestUrl);
-
-  return new Response("Bun Mock Fetch: no matching mocks.", { status: 404 });
+  throw new BunMockFetchError(
+    `No mock matched the request to "${requestUrl}". Register a mock with \`mockFetch\` or enable passthrough with \`setPassthrough(true)\`.`,
+  );
 };
 
 type Preconnect = typeof fetch.preconnect;
