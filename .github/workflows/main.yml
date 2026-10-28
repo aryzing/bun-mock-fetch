@@ -11,6 +11,9 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -25,9 +28,5 @@ jobs:
         run: bun run ci
 
       - name: Publish to NPM package registry
-        # https://github.com/oven-sh/bun/issues/1976
-        run: |
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
-          bunx npm@latest publish --access=public --tag=latest
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Use npm's OIDC authentication and provenance support, running on Bun.
+        run: bunx --bun npm@latest publish --access public --tag latest
