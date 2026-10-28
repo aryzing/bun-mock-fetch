@@ -23,6 +23,7 @@
 
     // Language and Environment
     "lib": ["ESNext"],
+    "types": ["bun"],
     "moduleDetection": "force",
     "target": "ESNext",
 
